@@ -35,8 +35,8 @@
         mode: "0755"
       loop:
         # Traditional (non-collections) layout
+        - library
         - plugins/filters
-        - plugins/modules
         - roles
       when: not with_collections_flag  # Only if NOT using collections
 
@@ -51,11 +51,11 @@
 
         - name: Create requirements file
           ansible.builtin.copy:
-            dest: "{{ project_dir }}/collections/requirements.yaml"
+            dest: "{{ project_dir }}/collections/requirements.yml"
             mode: "0644"
             content: |
               # List of collections to be installed with:
-              # ansible-galaxy collection install -r requirements.yaml
+              # ansible-galaxy collection install -r requirements.yml
               collections:
                 - name: ansible.posix
                 - name: community.general
@@ -68,9 +68,6 @@
           [defaults]
           remote_user = ansible
           host_key_checking = false
-          {% if with_collections_flag %}
-          collections_paths = ./collections
-          {% endif %}
           {% if not with_collections_flag %}
           roles_path = ./roles
           {% endif %}
