@@ -1,11 +1,18 @@
 ---
 - name: Create projects
   hosts: localhost
-  become: false
-  gather_facts: false
+  connection: local  # Execute locally (no SSH)
+  become: false      # No privilege escalation needed
+  gather_facts: false  # Faster execution (no system info needed)
 
   vars:
+    # Allow overriding project directory via CLI:
+    # ansible-playbook ... -e "dir=/custom/path"
     project_dir: "{{ dir | default('./ansible_project') }}"
+
+    # Flag to decide whether to use collections layout
+    # Can be overriden via CLI
+    # -e "with_collections=true"
     with_collections_flag: "{{ with_collections | default(false) | bool }}"
 
   tasks:
@@ -14,42 +21,49 @@
       ansible.builtin.file:
         path: "{{ project_dir }}/{{ item }}"
         state: directory
-        mode: 0755
+        mode: "0755"
       loop:
+        # Standard inventory and playbook structure
         - inventory/group_vars
         - inventory/host_vars
         - playbooks
-        - plugins/filters
-        - plugins/modules
-        
+
     - name: Create roles project_directory in the project root
       ansible.builtin.file:
-        path: "{{ project_dir }}/roles"
+        path: "{{ project_dir }}/{{ item }}"
         state: directory
-        mode: 0755
-      when: not with_collections_flag
+        mode: "0755"
+      loop:
+        # Traditional (non-collections) layout
+        - plugins/filters
+        - plugins/modules
+        - roles
+      when: not with_collections_flag  # Only if NOT using collections
 
     - name: Setup collections structure
-      when: with_collections_flag
+      when: with_collections_flag  # Only if using collections
       block:
+        - name: Create collections directory
+          ansible.builtin.file:
+            path: "{{ project_dir }}/collections/ansible_collections"
+            state: directory
+            mode: "0755"
 
-          - name: Collections project_directory
-            ansible.builtin.file:
-              path: "{{ project_dir }}/collections/ansible_collections"
-              state: directory
-              mode: 0755
+        - name: Create requirements file
+          ansible.builtin.copy:
+            dest: "{{ project_dir }}/collections/requirements.yaml"
+            mode: "0644"
+            content: |
+              # List of collections to be installed with:
+              # ansible-galaxy collection install -r requirements.yaml
+              collections:
+                - name: ansible.posix
+                - name: community.general
 
-          - name: Create requirements file
-            ansible.builtin.copy:
-              dest: "{{ project_dir }}/collections/requirements.yaml"
-              content: |
-                collections:
-                  - name: ansible.posix
-                  - name: community.general
-         
     - name: Create project Ansible configuration
       ansible.builtin.copy:
         dest: "{{ project_dir }}/ansible.cfg"
+        mode: "0644"
         content: |
           [defaults]
           remote_user = ansible
@@ -60,5 +74,3 @@
           {% if not with_collections_flag %}
           roles_path = ./roles
           {% endif %}
-
-
