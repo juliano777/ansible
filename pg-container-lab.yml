@@ -1,0 +1,41 @@
+---
+- name: Create project directories and files
+  hosts: localhost
+  become: false
+  gather_facts: false
+
+  vars:
+    # Allow overriding project directory via CLI:
+    # ansible-playbook ... -e "dir=/custom/path"
+    project_dir: "{{ dir | default('./pg-container-lab') }}"
+
+  tasks:
+    # -----------------------------------------------------------------------
+    # Create directory structure
+    # -----------------------------------------------------------------------
+    - name: Create directories
+      ansible.builtin.file:
+        path: "{{ project_dir }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - ansible/roles/postgresql/tasks
+        - ansible/roles/postgresql/templates
+        - tofu
+
+    # -----------------------------------------------------------------------
+    # Create empty files
+    # -----------------------------------------------------------------------
+    - name: Create files
+      ansible.builtin.file:
+        path: "{{ project_dir }}/{{ item }}"
+        state: touch
+        mode: "0644"
+      loop:
+        - ansible/inventory.ini
+        - ansible/playbook.yml
+        - ansible/roles/postgresql/tasks/main.yml
+        - ansible/roles/postgresql/templates/postgresql.conf.j2
+        - tofu/main.tf
+        - tofu/variables.tf
+        - tofu/outputs.tf
