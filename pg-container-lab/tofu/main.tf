@@ -1,36 +1,25 @@
 terraform {
   required_providers {
     podman = {
-      source  = "containers/podman"
+      source  = "registry.terraform.io/decafcode/podman"
+      version = "~> 1.1" 
     }
   }
 }
 
+# Aqui está o ajuste: container_host no lugar de host
 provider "podman" {
-  uri = "unix:///run/podman/podman.sock"
+  # systemctl --user enable --now podman.socket
+  container_host = "unix:///run/user/1000/podman/podman.sock" 
 }
 
-# Create a PostgreSQL container
-resource "podman_container" "postgres" {
-  name  = "pg-tofu"
-  image = "docker.io/library/postgres:16"
+resource "podman_image" "debian" {
+  reference = "docker.io/library/debian:latest"
+}
 
-  # Environment variables for PostgreSQL
-  env = {
-    POSTGRES_USER     = "admin"
-    POSTGRES_PASSWORD = "123"
-    POSTGRES_DB       = "db_app"
-  }
-
-  # Expose PostgreSQL port
-  ports {
-    internal = 5432
-    external = 5432
-  }
-
-  # Persist data using a volume
-  volume {
-    host_path      = "/tmp/data"
-    container_path = "/var/lib/postgresql/data"
-  }
+resource "podman_container" "meu_container" {
+  name  = "simples-debian-podman"
+  image = podman_image.debian.id
+  
+  command = ["sleep", "infinity"]
 }
