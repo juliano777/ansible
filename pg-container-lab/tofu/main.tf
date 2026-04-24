@@ -18,7 +18,7 @@ resource "podman_image" "debian" {
 }
 
 resource "podman_container" "meu_container" {
-  name  = "simples-debian-podman"
+  name  = "debian-test"
   image = podman_image.debian.id
   
   command = ["sleep", "infinity"]
