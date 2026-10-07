@@ -16,7 +16,6 @@
     with_collections_flag: "{{ with_collections | default(false) | bool }}"
 
   tasks:
-
     - name: Create the standard project directories
       ansible.builtin.file:
         path: "{{ project_dir }}/{{ item }}"
